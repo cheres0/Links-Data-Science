@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Link Hub</title>
+  <meta name="description" content="A clean, searchable hub for your links with descriptions and tags." />
+  <meta name="color-scheme" content="light dark" />
+  <style>
+    :root {
+      --bg: #0b0c10;
+      --panel: #111317;
+      --text: #e8eaed;
+      --muted: #9aa0a6;
+      --accent: #8ab4f8;
+      --ring: rgba(138,180,248,.35);
+      --chip: #20242c;
+      --chip-active: #2a3240;
+      --border: #22262e;
+      --shadow: 0 10px 25px rgba(0,0,0,.25), 0 2px 6px rgba(0,0,0,.2);
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f6f7fb;
+        --panel: #ffffff;
+        --text: #202124;
+        --muted: #5f6368;
+        --accent: #1a73e8;
+        --ring: rgba(26,115,232,.25);
+        --chip: #eef2f8;
+        --chip-active: #e1ecff;
+        --border: #e8eaed;
+        --shadow: 0 8px 20px rgba(15,23,42,.08), 0 1px 2px rgba(15,23,42,.05);
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font: 500 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text);
+      background: radial-gradient(1200px 600px at 20% -10%, rgba(138,180,248,.07), transparent 70%),
+                  radial-gradient(900px 600px at 120% 20%, rgba(255,255,255,.05), transparent 60%),
+                  var(--bg);
+    }
+    .container { max-width: 1100px; margin: 0 auto; padding: 28px 18px 80px; }
+
+    header {
+      position: sticky; top: 0; z-index: 5;
+      backdrop-filter: saturate(140%) blur(8px);
+      background: linear-gradient(to bottom, color-mix(in oklab, var(--bg), transparent 70%), transparent);
+      border-bottom: 1px solid var(--border);
+    }
+    header .inner { max-width: 1100px; margin: 0 auto; padding: 14px 18px; display: grid; gap: 10px; align-items: center; grid-template-columns: 1fr auto; }
+    .title { font-size: clamp(18px, 2.1vw, 24px); font-weight: 800; letter-spacing: 0.2px; display: flex; align-items: center; gap: 10px; }
+    .title svg { opacity: .9; }
+    .controls { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; }
+
+    input[type="search"], select {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border);
+      background: var(--panel); color: var(--text);
+      outline: none; box-shadow: 0 0 0 0 var(--ring);
+      transition: box-shadow .15s ease, border-color .15s ease, transform .06s ease;
+    }
+    input[type="search"]:focus, select:focus { box-shadow: 0 0 0 6px var(--ring); border-color: color-mix(in oklab, var(--accent), #000 40%); }
+    .btn { user-select: none; cursor: pointer; border: 1px solid var(--border); background: var(--panel); color: var(--text); padding: 10px 12px; border-radius: 12px; transition: transform .06s ease, box-shadow .15s ease; }
+    .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 10px; }
+    .tag { cursor: pointer; padding: 6px 10px; border-radius: 999px; font-weight: 600; font-size: 13px; background: var(--chip); border: 1px solid var(--border); color: var(--text); opacity: .95; }
+    .tag.active { background: var(--chip-active); border-color: color-mix(in oklab, var(--accent), var(--border) 55%); }
+
+    .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-top: 14px; }
+    .card {
+      position: relative;
+      background: linear-gradient(180deg, color-mix(in oklab, var(--panel), #fff 2%), var(--panel));
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 16px 16px 14px; box-shadow: var(--shadow);
+      transition: transform .08s ease, box-shadow .15s ease, border-color .15s ease;
+    }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 20px 45px rgba(0,0,0,.18), 0 4px 10px rgba(0,0,0,.12); }
+
+    .row { display: flex; gap: 12px; align-items: center; }
+    .favicon { width: 22px; height: 22px; border-radius: 5px; border: 1px solid var(--border); background: #fff; display: grid; place-items: center; overflow: hidden; }
+    .favicon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .card h3 { margin: 0; font-size: 16px; line-height: 1.2; }
+    .card p { margin: 8px 0 10px; font-size: 14px; color: var(--muted); min-height: 2.2em; }
+
+    .meta { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 8px; }
+    .meta .badge { font-size: 12px; color: var(--muted); border: 1px dashed var(--border); padding: 4px 8px; border-radius: 999px; }
+    .actions { display: flex; gap: 8px; }
+    a.link { text-decoration: none; font-weight: 700; }
+    a.link .go { display: inline-flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); background: color-mix(in oklab, var(--panel), #fff 4%); }
+    a.link:focus .go { outline: 6px solid var(--ring); }
+
+    .empty { text-align: center; color: var(--muted); padding: 40px 0; border: 2px dashed var(--border); border-radius: 16px; }
+    footer { max-width: 1100px; margin: 24px auto; padding: 0 18px; color: var(--muted); font-size: 13px; }
+
+    .theme-toggle { display: inline-flex; align-items: center; gap: 8px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  </style>
+</head>
+<body>
+  <!--
+    HOW TO USE
+    1) Edit the LINKS array below. Each item: { title, url, description, tags: ["foo"], addedAt: "2025-08-27" }
+    2) Open this file locally to preview, then push to GitHub (enable Pages) to publish.
+    3) Optional: change the brand name in the header.
+  -->
+
+  <header>
+    <div class="inner">
+      <div class="title" aria-label="Site title">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path d="M8.5 6.5l7 7m-10 1l3 3a3 3 0 004.2 0l5.6-5.6a3 3 0 000-4.2l-3-3a3 3 0 00-4.2 0L5.5 7.5a3 3 0 000 4.2z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <span>My Link Hub</span>
+      </div>
+      <div class="controls">
+        <input id="search" type="search" placeholder="Search links, descriptions, tags…" autocomplete="off" />
+        <select id="sort">
+          <option value="az">Sort: A → Z</option>
+          <option value="new">Sort: Newest</option>
+          <option value="old">Sort: Oldest</option>
+        </select>
+        <button id="themeBtn" class="btn theme-toggle" title="Toggle theme" aria-label="Toggle theme">
+          <span aria-hidden>🌓</span><span class="sr-only">Toggle theme</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div id="tagBar" class="tags" role="toolbar" aria-label="Filter by tag"></div>
+    <div id="grid" class="grid" role="list"></div>
+    <div id="empty" class="empty" hidden>No links matched your filters.</div>
+  </div>
+
+  <footer>
+    <p>Built with vanilla HTML/CSS/JS. Edit <code>LINKS</code> in this file to update content. This page works offline and on GitHub Pages.</p>
+  </footer>
+
+  <script>
+    // ====== 1) YOUR CONTENT ======
+    /**
+     * Edit this array. Keep titles short. Tags are optional but useful for filtering.
+     * addedAt is optional (YYYY-MM-DD) and used for the Newest/Oldest sort.
+     */
+    const LINKS = [
+      {
+        title: "GitHub Profile",
+        url: "https://github.com/your-username",
+        description: "All my public repositories and projects.",
+        tags: ["profile", "code"],
+        addedAt: "2025-08-27"
+      },
+      {
+        title: "My Portfolio",
+        url: "https://your-portfolio.example.com",
+        description: "Case studies, design notes, and contact information.",
+        tags: ["work", "design"]
+      },
+      {
+        title: "Airbnb Listing",
+        url: "https://www.airbnb.com/rooms/your-listing",
+        description: "Short-term rental details, amenities, and booking.",
+        tags: ["business", "arequipa"]
+      },
+      {
+        title: "Research Notes: ATC & Privacy",
+        url: "https://example.com/atc-notes",
+        description: "Ongoing notes on privacy-preserving distributed learning.",
+        tags: ["research", "ATC", "ML"],
+        addedAt: "2025-08-20"
+      },
+      {
+        title: "Coworking Space Info",
+        url: "https://example.com/coworking-arequipa",
+        description: "Rates, packages, and location for the study/office space.",
+        tags: ["business", "arequipa"],
+        addedAt: "2025-08-26"
+      }
+    ];
+
+    // ====== 2) STATE ======
+    let activeTags = new Set();
+    const els = {
+      search: document.getElementById('search'),
+      sort: document.getElementById('sort'),
+      tagBar: document.getElementById('tagBar'),
+      grid: document.getElementById('grid'),
+      empty: document.getElementById('empty'),
+      themeBtn: document.getElementById('themeBtn'),
+    };
+
+    // ====== 3) THEME TOGGLE ======
+    (function initTheme(){
+      const saved = localStorage.getItem('theme');
+      if (saved === 'light') document.documentElement.style.colorScheme = 'light';
+      if (saved === 'dark') document.documentElement.style.colorScheme = 'dark';
+      els.themeBtn.addEventListener('click', () => {
+        const now = getComputedStyle(document.documentElement).colorScheme;
+        const next = now === 'dark' ? 'light' : 'dark';
+        document.documentElement.style.colorScheme = next;
+        localStorage.setItem('theme', next);
+      });
+    })();
+
+    // ====== 4) RENDER TAGS ======
+    function buildTags(data){
+      const freq = new Map();
+      data.forEach(item => (item.tags||[]).forEach(t => freq.set(t, (freq.get(t)||0)+1)));
+      const tags = [...freq.entries()].sort((a,b)=> b[1]-a[1] || a[0].localeCompare(b[0]));
+      els.tagBar.innerHTML = '';
+      // "All" chip
+      const all = chip('All', true);
+      all.addEventListener('click', () => { activeTags.clear(); update(); });
+      els.tagBar.appendChild(all);
+      for (const [name] of tags){
+        const el = chip(name, activeTags.has(name));
+        el.addEventListener('click', () => {
+          if (activeTags.has(name)) activeTags.delete(name); else activeTags.add(name);
+          update();
+        });
+        els.tagBar.appendChild(el);
+      }
+    }
+    function chip(text, isAll){
+      const el = document.createElement('button');
+      el.className = 'tag' + (isAll ? ' active-all' : '');
+      el.type = 'button';
+      el.textContent = text;
+      return el;
+    }
+
+    // ====== 5) FILTER + SORT ======
+    function filtered(){
+      const q = els.search.value.trim().toLowerCase();
+      const tags = activeTags;
+      let out = LINKS.filter(item => {
+        const hay = `${item.title} ${item.description} ${item.url} ${(item.tags||[]).join(' ')}`.toLowerCase();
+        const hit = q === '' || hay.includes(q);
+        const tagOk = tags.size === 0 || (item.tags||[]).some(t => tags.has(t));
+        return hit && tagOk;
+      });
+      const s = els.sort.value;
+      if (s === 'az') out.sort((a,b)=> a.title.localeCompare(b.title));
+      if (s === 'new') out.sort((a,b)=> (b.addedAt||'0000').localeCompare(a.addedAt||'0000'));
+      if (s === 'old') out.sort((a,b)=> (a.addedAt||'9999').localeCompare(b.addedAt||'9999'));
+      return out;
+    }
+
+    // ====== 6) RENDER CARDS ======
+    function render(list){
+      els.grid.innerHTML = '';
+      els.empty.hidden = list.length !== 0;
+      for (const item of list){
+        const card = document.createElement('article');
+        card.className = 'card'; card.role = 'listitem';
+
+        const row = document.createElement('div'); row.className = 'row';
+        const ico = document.createElement('div'); ico.className = 'favicon';
+        const img = document.createElement('img');
+        const origin = safeOrigin(item.url);
+        img.src = origin ? origin + '/favicon.ico' : '';
+        img.alt = '';
+        img.onerror = () => { ico.innerHTML = fallbackIcon(); };
+        ico.appendChild(img);
+
+        const h3 = document.createElement('h3'); h3.textContent = item.title;
+        row.append(ico, h3);
+
+        const p = document.createElement('p'); p.textContent = item.description || '';
+
+        const meta = document.createElement('div'); meta.className = 'meta';
+        const badge = document.createElement('span'); badge.className = 'badge'; badge.textContent = (item.tags||[]).join(' • ') || '—';
+        const actions = document.createElement('div'); actions.className = 'actions';
+        const a = document.createElement('a'); a.className = 'link'; a.href = item.url; a.target = '_blank'; a.rel = 'noopener';
+        a.innerHTML = `<span class="go">Open <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M7 17l10-10m0 0H9m8 0v8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+        actions.appendChild(a);
+        meta.append(badge, actions);
+
+        card.append(row, p, meta);
+        els.grid.appendChild(card);
+      }
+    }
+
+    function safeOrigin(u){ try { return new URL(u).origin; } catch { return null; } }
+    function fallbackIcon(){
+      return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+        <path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+      </svg>`;
+    }
+
+    // ====== 7) WIRE-UP ======
+    function update(){ render(filtered()); highlightActiveChips(); }
+    function highlightActiveChips(){
+      document.querySelectorAll('.tag').forEach(ch => {
+        const t = ch.textContent;
+        if (t === 'All') ch.classList.toggle('active', activeTags.size === 0);
+        else ch.classList.toggle('active', activeTags.has(t));
+      });
+    }
+
+    els.search.addEventListener('input', update);
+    els.sort.addEventListener('change', update);
+
+    // Initial
+    buildTags(LINKS);
+    update();
+  </script>
+</body>
+</html>
